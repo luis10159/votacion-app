@@ -7,9 +7,9 @@ contract SistemaVotacion {
 
   struct Votante {
     string nombre;
-    string facultad;
     uint256 dni;
     bool haVotado;
+    uint256 facultadId; // Nueva variable para almacenar el ID de la facultad
   }
 
   struct Candidato {
@@ -29,11 +29,23 @@ contract SistemaVotacion {
     string nombre;
   }
 
-  // Mapeos
-  mapping(address => Votante) public mapaVotantes;
+  struct Facultad {
+    string nombre;
+  }
+
+  // Arreglos
+  Votante[] public votantes;
   Candidato[] public candidatos;
   Partido[] public partidos;
-  mapping(uint256 => Eleccion) public elecciones;
+  Eleccion[] public elecciones;
+  Facultad[] public facultades;
+
+  // Mapeos
+  mapping(address => Votante) public mapaVotantes; // Mapeo de direcciones a votantes
+  mapping(uint256 => uint256) public candidatosIndex; // Mapeo de ID de candidatos a índices de candidatos
+  mapping(uint256 => uint256) public partidosIndex; // Mapeo de ID de partidos a índices de partidos
+  mapping(uint256 => uint256) public eleccionesIndex; // Mapeo de ID de elecciones a índices de elecciones
+  mapping(string => uint256) public facultadesIndex; // Mapeo de nombres de facultades a índices de facultades
 
   // Variables públicas
 
@@ -68,8 +80,24 @@ contract SistemaVotacion {
 
   // --- Funciones
 
-  function registrarVotante(string memory nombre, string memory facultad, uint256 dni) public onlyOwner {
-    mapaVotantes[msg.sender] = Votante(nombre, facultad, dni, false);
+  // Registrar votante con facultad
+  function registrarVotante(string memory nombre, uint256 dni, string memory facultad) public onlyOwner {
+    require(facultadesIndex[facultad] != 0, "La facultad no existe."); // Asegurar que la facultad exista
+    Votante memory nuevoVotante = Votante(nombre, dni, false, facultadesIndex[facultad]);
+    mapaVotantes[msg.sender] = nuevoVotante;
+  }
+
+  // Agregar nueva facultad
+  function agregarFacultad(string memory nombre) public onlyOwner {
+    require(facultadesIndex[nombre] == 0, "La facultad ya existe."); // Asegurar que la facultad no exista
+    Facultad memory nuevaFacultad = Facultad(nombre);
+    facultades.push(nuevaFacultad);
+    facultadesIndex[nombre] = facultades.length;
+  }
+
+  // Obtener todas las facultades
+  function obtenerFacultades() public view returns (Facultad[] memory) {
+    return facultades;
   }
 
   function agregarCandidato(uint256 idPartido, bool principal) public onlyOwner {
